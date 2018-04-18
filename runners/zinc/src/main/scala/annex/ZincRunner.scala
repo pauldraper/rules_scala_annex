@@ -62,9 +62,7 @@ object ZincRunner extends WorkerMain[Env] {
       new FilePersistence(rootDir.resolve(path), Paths.get(options.outputDir))
     }
 
-    val scalaInstance = AnxScalaInstance(
-      options.scalaVersion,
-      options.compilerClasspath.map(toFile).toArray)
+    val scalaInstance = AnxScalaInstance(options.scalaVersion, options.compilerClasspath.map(toFile).toArray)
 
     val compilerBridgeJar = new File(options.compilerBridge)
 
@@ -73,11 +71,7 @@ object ZincRunner extends WorkerMain[Env] {
     val scalaCompiler: AnalyzingCompiler =
       ZincUtil.scalaCompiler(scalaInstance, compilerBridgeJar)
 
-    val compilers: Compilers = ZincUtil.compilers(
-      scalaInstance,
-      ClasspathOptionsUtil.boot,
-      None,
-      scalaCompiler)
+    val compilers: Compilers = ZincUtil.compilers(scalaInstance, ClasspathOptionsUtil.boot, None, scalaCompiler)
 
     val compileOptions: CompileOptions =
       CompileOptions.create
@@ -86,12 +80,14 @@ object ZincRunner extends WorkerMain[Env] {
           Array.concat(
             Array(toFile(options.outputDir)),
             options.compilationClasspath.map(toFile).toArray,
-            options.compilerClasspath.map(toFile).toArray)) // err??
+            options.compilerClasspath.map(toFile).toArray
+          )
+        ) // err??
         .withClassesDirectory(new File(options.outputDir))
-        .withScalacOptions(
-          options.pluginsClasspath.map(p => s"-Xplugin:${p}").toArray)
+        .withScalacOptions(options.pluginsClasspath.map(p => s"-Xplugin:${p}").toArray)
 
-    val loadedContents = try persistence.load() catch {
+    val loadedContents = try persistence.load()
+    catch {
       case NonFatal(e) =>
         logger.warn(() => "Failed to load analysis: $e")
         None
@@ -106,11 +102,10 @@ object ZincRunner extends WorkerMain[Env] {
     val compilerCache = new FreshCompilerCache
     val incOptions = IncOptions.create()
 
-    val setup: Setup = Setup.create(
-      lookup, skip, null, compilerCache, incOptions, reporter, Optional.empty(), Array.empty)
+    val setup: Setup =
+      Setup.create(lookup, skip, null, compilerCache, incOptions, reporter, Optional.empty(), Array.empty)
 
-    val inputs: Inputs = Inputs.of(
-      compilers, compileOptions, setup, previousResult)
+    val inputs: Inputs = Inputs.of(compilers, compileOptions, setup, previousResult)
 
     val compiler: IncrementalCompilerImpl = new IncrementalCompilerImpl()
     val compileResult: CompileResult =
@@ -125,7 +120,8 @@ object ZincRunner extends WorkerMain[Env] {
 
     val analysisContents = AnalysisContents.create(compileResult.analysis, compileResult.setup)
 
-    try persistence.save(analysisContents) catch {
+    try persistence.save(analysisContents)
+    catch {
       case NonFatal(e) => logger.warn(() => "Failed to save analysis: $e")
     }
 
@@ -161,8 +157,7 @@ object ZincRunner extends WorkerMain[Env] {
     }
 
     val mains =
-      analysis
-        .infos.allInfos.values.toList
+      analysis.infos.allInfos.values.toList
         .flatMap(_.getMainClasses.toList)
         .sorted
 

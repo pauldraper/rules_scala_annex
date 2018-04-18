@@ -1,5 +1,7 @@
 package annex
 
+import annex.worker.WorkerMain
+
 import sbt.internal.inc.Analysis
 import sbt.internal.inc.AnalyzingCompiler
 import sbt.internal.inc.CompileFailed
@@ -41,16 +43,17 @@ import java.util.Optional
 import java.util.Properties
 import java.util.function.Supplier
 
-object ZincRunner {
+object ZincRunner extends WorkerMain[Env] {
 
   val toFile: String => File = s => new File(s)
   val toAbsolute: File => File = f => new File(f.getAbsolutePath)
   val toAbsoluteFile: String => File = toFile andThen toAbsolute
 
-  def main(args: Array[String]): Unit =
-    AnxWorker.main(process)(args)
+  protected[this] def init(args: Option[Array[String]]) = Env.read(args.map(_.toSeq))
 
-  def process(options: Options): Unit = {
+  protected[this] def work(env: Env, args: Array[String]) = {
+    val options = Options.read(args.toList, env)
+
     Files.createDirectories(Paths.get(options.outputDir))
 
     val persistence = options.persistenceDir.fold[Persistence](NullPersistence) { dir =>
@@ -181,8 +184,10 @@ object ZincRunner {
     }
 
     jarCreator.execute()
-    }
-    }
+
+    env
+  }
+}
 
 final class AnxPerClasspathEntryLookup extends PerClasspathEntryLookup {
   override def analysis(classpathEntry: File): Optional[CompileAnalysis] =
